@@ -38,7 +38,6 @@ void loadMatrix(MDATA mData, FILE *fp){
 	if(!mData){
 		return;
 	}
-	printf("Cheguei à loadMatrix \n");
 
 	char str[LINESIZE];
 	int mline = 0;

@@ -69,19 +69,18 @@ int** unMakeSparseMatrix(int** matrix, int lines, int columns, int nZeroes){
 	
 	
 	printf("nZeroes: %d \n",nZeroes);
-	double start = omp_get_wtime();
-
+	
 	int** nonSparse = (int**)malloc(sizeof(int*)*nZeroes);
 	int lineCounter = 0;
 
 	//#pragma omp for
 	//#pragma omp parallel
 
-	#pragma omp parallel
+	//#pragma omp parallel
 
 	for(int i=0; i<lines; i++){
-		int id = omp_get_thread_num();
-		printf("Sou a thread: %d e vou iterar na linha %d \n",id,i);
+		//int id = omp_get_thread_num();
+		//printf("Sou a thread: %d e vou iterar na linha %d \n",id,i);
 		for(int j=0; j<columns; j++){
 			if(matrix[i][j] != 0){
 				nonSparse[lineCounter] = (int*)malloc(sizeof(int)*3);
@@ -92,7 +91,7 @@ int** unMakeSparseMatrix(int** matrix, int lines, int columns, int nZeroes){
 			}
 		}
 	}
-	printf("Time: \t %f \n", omp_get_wtime()-start); 
+
 	printf("LineCounterResult: %d \n",lineCounter);
 	return nonSparse;
 }
@@ -113,13 +112,15 @@ int main(int argc, char *argv[]){
 	int lines = atoi(argv[2]), columns=atoi(argv[3]);
 
 	MDATA mData = callLoadMatrix(argv[1],lines,columns);
+	printf("Carreguei a matrix");
 
 	if(!mData){
 		return -1;
 	}
 
+	double start = omp_get_wtime();
 	mData->dataMatrix = unMakeSparseMatrix(mData->matrix,mData->lines,mData->columns,mData->nZeroes);
-	
+	printf("Time: \t %f \n", omp_get_wtime()-start); 
 	
 	/*puts("Impressão da matriz contida:");
 	for(int i=0; i<mData->nZeroes; i++){
