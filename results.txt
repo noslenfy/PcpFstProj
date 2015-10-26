@@ -1,0 +1,14 @@
+Cheguei à loadMatrix 
+nZeroes: 3 
+Sou a thread: 3 e vou iterar na linha 8 
+Sou a thread: 3 e vou iterar na linha 9 
+Sou a thread: 1 e vou iterar na linha 3 
+Sou a thread: 1 e vou iterar na linha 4 
+Sou a thread: 1 e vou iterar na linha 5 
+Sou a thread: 0 e vou iterar na linha 0 
+Sou a thread: 0 e vou iterar na linha 1 
+Sou a thread: 0 e vou iterar na linha 2 
+Sou a thread: 2 e vou iterar na linha 6 
+Sou a thread: 2 e vou iterar na linha 7 
+Time: 	 0.006759 
+LineCounterResult: 3 
