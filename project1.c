@@ -67,6 +67,7 @@ int* makeNonSparseMultiplication(int **nonSparseMatrix, int *vector, int lines, 
 	//	result[nonSparseMatrix[i][0]] += nonSparseMatrix[i][2] * vector[nonSparseMatrix[i][1]];
 	//}
 
+	/*
 	#pragma omp parallel for schedule(auto) 
 	for(int i=omp_get_thread_num()*(nZeroes/n_threads); i<nZeroes; i++) {
 		int line_number = nonSparseMatrix[i][0];
@@ -74,14 +75,37 @@ int* makeNonSparseMultiplication(int **nonSparseMatrix, int *vector, int lines, 
 			#pragma omp atomic	
 			result[nonSparseMatrix[j][0]] += nonSparseMatrix[j][2] * vector[nonSparseMatrix[j][1]];
 		}
+	}*/
+
+	/*
+	#pragma omp parallel for schedule(auto)
+	for(int i=omp_get_thread_num()*(nZeroes/n_threads); i<nZeroes; i+=(nZeroes/n_threads)){
+		int numLinha = i;
+		printf("Sou a thread %d e vou trabalhar nas linhas %d - %d \n",omp_get_thread_num(),omp_get_thread_num()*(nZeroes/n_threads),numLinha + (nZeroes/n_threads));
+
+		for(int j=numLinha; j<numLinha + (nZeroes/n_threads) && j<nZeroes; j++){
+			#pragma omp atomic
+			result[nonSparseMatrix[j][0]] += nonSparseMatrix[j][2] * vector[nonSparseMatrix[j][1]];	
+		}
+	}*/
+	
+	#pragma omp parallel for schedule(auto)
+	for(int i=0; i<nZeroes; i+=(nZeroes/n_threads)){
+		//puts("Estou pela primeira vez no for \n");
+		for(int j=i; j<nZeroes && j<(i+(nZeroes/n_threads)); j++){
+			#pragma omp atomic
+			result[nonSparseMatrix[j][0]] += nonSparseMatrix[j][2] * vector[nonSparseMatrix[j][1]];
+		}
+
 	}
 
 	return result;
 }
 
 int** unMakeSparseMatrix(int** matrix, int lines, int columns, int nZeroes){
-	
+	//printf("NZEROES: %d -> Lines: %d\n",nZeroes,lines);
 	int** nonSparse = (int**)malloc(sizeof(int*)*nZeroes);
+	//puts("Consegui fazer o malloc");
 	int lineCounter = 0;
 
 	//int id = omp_get_thread_num();	
@@ -118,12 +142,25 @@ void freeMatrix(MDATA mData) {
 	mData->dataMatrix = NULL;
 }
 
+//equalVectors(stdMultResult,mData->multiplicationResult,mData->lines)
+int equalVectors(int *vector1, int *vector2, int lines){
+	int result = 1;
+
+	for(int i=0; i<lines; i++){
+		if(vector1[i] != vector2[i]){
+			result = 0;
+		}
+	}
+
+	return result;
+}
+
 
 
 int main(int argc, char *argv[]){
 	#define N_TIMES 5
-	#define N_CONFIGURATIONS 7
-	int n_threads[N_CONFIGURATIONS] = {1,2,4,8,16,24,48};
+	#define N_CONFIGURATIONS 4
+	int n_threads[N_CONFIGURATIONS] = {1,2,3,4};
 
 	// used to  measure times
 	double start=0, finish=0, total=0;
@@ -142,19 +179,19 @@ int main(int argc, char *argv[]){
 	start = omp_get_wtime();
 	mData->dataMatrix = unMakeSparseMatrix(mData->matrix,mData->lines,mData->columns,mData->nZeroes);
 	finish = omp_get_wtime()-start;
-	printf("Demorei %f a converter a matriz\n", finish);
-
+	printf("Demorei %f a converter a matriz\n", finish);	
 
 	// start computation
 	for (int i=0; i<N_CONFIGURATIONS;i++) {
+		printf("Configuration: %d \n",n_threads[i]);
 		for(int j=0; j<N_TIMES;j++) {
 			start = omp_get_wtime();
 			if (mData->multiplicationResult) free(mData->multiplicationResult);
 			mData->multiplicationResult = makeNonSparseMultiplication(mData->dataMatrix,mData->multiplicationVector, mData->lines, mData->nZeroes, n_threads[i]);
 			finish = omp_get_wtime()-start;
-			for(int f=0; f<mData->lines; f++){
+			/*for(int f=0; f<mData->lines; f++){
 				printf("%d;  ", mData->multiplicationResult[f]);
-			}
+			}*/
 			putchar('\n');	
 			total += finish;
 			printf("%d - execution with %d threads took:\t %f \n", j+1, n_threads[i], finish);
@@ -164,6 +201,19 @@ int main(int argc, char *argv[]){
 		total=0;
 	}
 	
+	int *stdMultResult = makeStandardMultiplication(mData->matrix,mData->multiplicationVector, mData->lines, mData->columns);
+	if(equalVectors(stdMultResult,mData->multiplicationResult,mData->lines)){
+		/*puts("Impressão do grande resultado \n");
+		for(int i=0; i<mData->lines; i++){
+			printf("%d; ",stdMultResult[i]);
+		}
+		putchar('\n');*/
+		puts("Fucking results Match \n");
+	}
+	else{
+		puts("Fucking results don't match \n");
+	}
+
 	/*puts("Impressão da matriz contida:");
 	for(int i=0; i<mData->nZeroes; i++){
 		for(int j=0; j<3; j++){

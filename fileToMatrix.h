@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LINESIZE 100000
+#define LINESIZE 1000000
 
 typedef struct sMatrixData{
 	int **matrix;
