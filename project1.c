@@ -51,7 +51,6 @@ int* makeStandardMultiplication(int **matrix, int*vector, int lines, int columns
 }
 
 int* makeNonSparseMultiplicationSequential(int **nonSparseMatrix, int *vector, int lines, int nZeroes){
-	puts("Vou agora pa esta \n");
 	int* result = (int*)malloc(sizeof(int)*lines);
 
 	for(int i=0; i<lines; i++){
@@ -64,7 +63,6 @@ int* makeNonSparseMultiplicationSequential(int **nonSparseMatrix, int *vector, i
 	}*/
 
 	for(int i=0; i<nZeroes; i++){
-	//	#pragma omp atomic
 		result[nonSparseMatrix[i][0]] += nonSparseMatrix[i][2] * vector[nonSparseMatrix[i][1]];
 	}
 
