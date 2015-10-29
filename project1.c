@@ -50,6 +50,27 @@ int* makeStandardMultiplication(int **matrix, int*vector, int lines, int columns
 	return result;
 }
 
+int* makeNonSparseMultiplicationSequential(int **nonSparseMatrix, int *vector, int lines, int nZeroes){
+	puts("Vou agora pa esta \n");
+	int* result = (int*)malloc(sizeof(int)*lines);
+
+	for(int i=0; i<lines; i++){
+		result[i] = 0;
+	}
+
+	/*
+	for(int i=0; i<nZeroes; i++){
+		result[nonSparseMatrix[i][0]] += nonSparseMatrix[i][2] * vector[nonSparseMatrix[i][1]];
+	}*/
+
+	for(int i=0; i<nZeroes; i++){
+	//	#pragma omp atomic
+		result[nonSparseMatrix[i][0]] += nonSparseMatrix[i][2] * vector[nonSparseMatrix[i][1]];
+	}
+
+	return result;
+}
+
 int* makeNonSparseMultiplication(int **nonSparseMatrix, int *vector, int lines, int nZeroes	, int n_threads){
 	omp_set_num_threads(n_threads);
 
@@ -104,6 +125,8 @@ int* makeNonSparseMultiplication(int **nonSparseMatrix, int *vector, int lines, 
 
 int** unMakeSparseMatrix(int** matrix, int lines, int columns, int nZeroes){
 	//printf("NZEROES: %d -> Lines: %d\n",nZeroes,lines);
+	long int aux = (sizeof(int)*nZeroes);
+	printf("Tamanho do malloc que vou fazer: %ld \n",(aux/1024));
 	int** nonSparse = (int**)malloc(sizeof(int*)*nZeroes);
 	//puts("Consegui fazer o malloc");
 	int lineCounter = 0;
@@ -155,12 +178,10 @@ int equalVectors(int *vector1, int *vector2, int lines){
 	return result;
 }
 
-
-
 int main(int argc, char *argv[]){
 	#define N_TIMES 5
-	#define N_CONFIGURATIONS 4
-	int n_threads[N_CONFIGURATIONS] = {1,2,3,4};
+	#define N_CONFIGURATIONS 3
+	int n_threads[N_CONFIGURATIONS] = {1,2,4};
 
 	// used to  measure times
 	double start=0, finish=0, total=0;
@@ -171,6 +192,7 @@ int main(int argc, char *argv[]){
 	start = omp_get_wtime();
 	MDATA mData = callLoadMatrix(argv[1],lines,columns);
 	printf("Carreguei a matrix em: %fs\n", omp_get_wtime()-start); 
+	printf("NZEROES: %d \n",mData->nZeroes);
 
 	if(!mData){
 		return -1;
@@ -179,7 +201,7 @@ int main(int argc, char *argv[]){
 	start = omp_get_wtime();
 	mData->dataMatrix = unMakeSparseMatrix(mData->matrix,mData->lines,mData->columns,mData->nZeroes);
 	finish = omp_get_wtime()-start;
-	printf("Demorei %f a converter a matriz\n", finish);	
+	printf("Demorei %f a converter a matriz\n", finish);
 
 	// start computation
 	for (int i=0; i<N_CONFIGURATIONS;i++) {
@@ -201,8 +223,19 @@ int main(int argc, char *argv[]){
 		total=0;
 	}
 	
+	start = omp_get_wtime();
 	int *stdMultResult = makeStandardMultiplication(mData->matrix,mData->multiplicationVector, mData->lines, mData->columns);
+	finish = omp_get_wtime()-start;
+	printf("Demorei %f segundos a fazer a multiplicacao normal \n",finish);
+	//int* makeNonSparseMultiplicationSequential(int **nonSparseMatrix, int *vector, int lines, int nZeroes){
+
+	start = omp_get_wtime();
+	int *stdMultResultNonSparse = makeNonSparseMultiplicationSequential(mData->dataMatrix,mData->multiplicationVector, mData->lines, mData->nZeroes);
+	finish = omp_get_wtime()-start;
+	printf("Demorei %f segundos a fazer a multiplicacao nonSparseSequencial \n",finish);
+
 	if(equalVectors(stdMultResult,mData->multiplicationResult,mData->lines)){
+		//if(equalVectors(stdMultResult,stdMultResultNonSparse,mData->lines))
 		/*puts("Impressão do grande resultado \n");
 		for(int i=0; i<mData->lines; i++){
 			printf("%d; ",stdMultResult[i]);
@@ -212,6 +245,13 @@ int main(int argc, char *argv[]){
 	}
 	else{
 		puts("Fucking results don't match \n");
+	}
+
+	if(equalVectors(stdMultResult,stdMultResultNonSparse,mData->lines)){
+		puts("Fucking second results Match \n");
+	}
+	else{
+		puts("Fucking second results don't match \n");
 	}
 
 	/*puts("Impressão da matriz contida:");

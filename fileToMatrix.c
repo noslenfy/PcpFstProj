@@ -20,6 +20,7 @@ void insertMatrixLine(int matrixLine[], char *textLine, int line, int columns, i
 }
 
 void insertMultiplicationVector(int* vector, char *textLine, int lines){
+	puts("Vou agora meter o vetor de multiplicação e vou estourar aqui \n");
 	char *token;
 
 	token = strtok(textLine, " ");
@@ -57,6 +58,9 @@ void loadMatrix(MDATA mData, FILE *fp){
 		}
 		else{
 			insertMatrixLine(mData->matrix[mline], str, mline, mData->columns, &mData->nZeroes);
+			if((mline+1)==mData->lines){
+				puts("Atenção a este possível erro \n");
+			}
 		}
 
 		mline++;
